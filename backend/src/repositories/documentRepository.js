@@ -1,0 +1,18 @@
+const documents = new Map();
+
+function create(document) {
+  documents.set(document.id, document);
+  return document;
+}
+
+function findById(id) {
+  return documents.get(id) || null;
+}
+
+function findByOwner(owner) {
+  return Array.from(documents.values())
+    .filter((document) => document.owner === owner)
+    .sort((first, second) => second.uploadedAt.localeCompare(first.uploadedAt));
+}
+
+module.exports = { create, findById, findByOwner };
