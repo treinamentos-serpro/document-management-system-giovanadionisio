@@ -3,6 +3,15 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const documentRepository = require('../repositories/documentRepository');
 
+function sanitizeOriginalName(rawName) {
+  const withoutPath = path.basename(path.win32.basename(rawName));
+  // Remove caracteres de controle (ex.: CR/LF) para evitar quebra de linha
+  // indevida ou injeção de cabeçalhos ao expor o nome (ex.: Content-Disposition).
+  // eslint-disable-next-line no-control-regex
+  const withoutControlChars = withoutPath.replace(/[\x00-\x1f\x7f]+/g, '').trim();
+  return withoutControlChars || 'document';
+}
+
 function toPublicDocument(document) {
   return {
     id: document.id,
@@ -21,7 +30,7 @@ async function createDocument(file, owner) {
     throw error;
   }
 
-  const originalName = path.basename(path.win32.basename(file.originalname)) || 'document';
+  const originalName = sanitizeOriginalName(file.originalname);
   const document = {
     id: randomUUID(),
     originalName,

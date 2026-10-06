@@ -76,6 +76,47 @@ test('upload, listagem e download respeitam o proprietário', async (t) => {
   });
 });
 
+test('sanitiza caracteres de controle (CR/LF) no nome original do arquivo', async () => {
+  // Simula um cliente malicioso que usa o parâmetro RFC 2231 (filename*) para
+  // enviar um nome de arquivo com CR/LF codificados, que o busboy decodifica
+  // para bytes de controle reais em req.file.originalname.
+  const boundary = '----dmsRegressionBoundary';
+  const body = [
+    `--${boundary}`,
+    'Content-Disposition: form-data; name="file"; '
+      + "filename*=UTF-8''nome%0D%0AX-Injected-Header%3A%20true.txt",
+    'Content-Type: text/plain',
+    '',
+    'conteudo malicioso',
+    `--${boundary}--`,
+    '',
+  ].join('\r\n');
+
+  const uploadResponse = await fetch(`${baseUrl}/upload`, {
+    method: 'POST',
+    headers: {
+      'X-User-Id': 'usuario-crlf',
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+    },
+    body,
+  });
+  assert.equal(uploadResponse.status, 201);
+
+  const { document } = await uploadResponse.json();
+  assert.doesNotMatch(document.originalName, /[\r\n]/);
+  assert.equal(document.originalName, 'nomeX-Injected-Header: true.txt');
+
+  const downloadResponse = await fetch(`${baseUrl}/documents/${document.id}/download`, {
+    headers: { 'X-User-Id': 'usuario-crlf' },
+  });
+  assert.equal(downloadResponse.status, 200);
+
+  const contentDisposition = downloadResponse.headers.get('content-disposition');
+  assert.doesNotMatch(contentDisposition, /[\r\n]/);
+  assert.match(contentDisposition, /nomeX-Injected-Header: true\.txt/);
+  assert.equal(downloadResponse.headers.get('x-injected-header'), null);
+});
+
 test('as rotas validam identidade, arquivo e identificador', async (t) => {
   await t.test('rejeita upload sem proprietário ou arquivo', async () => {
     const noOwner = await fetch(`${baseUrl}/upload`, { method: 'POST' });
