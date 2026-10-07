@@ -45,6 +45,10 @@ Camadas internas não conhecem camadas externas.
 - `GET /documents` - lista os documentos
 - `GET /documents/:id/download` - baixa um documento
 
+Consulte [docs/specs/dms-spec.md](../docs/specs/dms-spec.md) para os contratos
+completos da API e requisitos. As rotas usam `X-User-Id` para identificar o
+proprietário; mantenha o formato de erro `{ error: { code, message } }`.
+
 ## Armazenamento (restrição importante)
 
 - Os arquivos enviados são gravados no filesystem local da aplicação, na pasta
@@ -74,3 +78,20 @@ Camadas internas não conhecem camadas externas.
 - Não quebrar funcionalidades existentes
 - Manter o seed simples e evolutivo
 - Preferir dependências já presentes no `package.json`
+
+## Validação e referências
+
+- Backend: `cd backend && npm test` (runner nativo `node:test`); `npm run dev`
+  inicia o servidor com `node --watch`.
+- Frontend: `cd frontend && npm run build`; `npm run dev` inicia o Vite e o
+  proxy `/api` espera o backend em `localhost:3000`.
+- Não há scripts de lint configurados nos `package.json` atuais.
+- Use [backend/test/app.test.js](../backend/test/app.test.js) como exemplo para
+  testes de integração HTTP. A configuração HTTP e o tratamento global de erros
+  estão em [backend/src/app.js](../backend/src/app.js).
+- No frontend, [documentApi.js](../frontend/src/services/documentApi.js)
+  centraliza as chamadas HTTP; os componentes ficam em
+  [frontend/src/components/](../frontend/src/components/).
+- Os fluxos detalhados e limites do produto estão na
+  [especificação](../docs/specs/dms-spec.md); consulte-a em vez de duplicar os
+  requisitos aqui.
